@@ -26,6 +26,7 @@ class ElasticClient implements SearchClientAdaptor, DataWriter, DataSearcher
     protected $clientIndexName;
     protected $clientAPI;
     protected $response;
+    protected $rawQuery;
 
     private static $batch_length = 100;
 
@@ -198,7 +199,7 @@ class ElasticClient implements SearchClientAdaptor, DataWriter, DataSearcher
             $term = $term . '~';
         }
 
-        $query     = [
+        $this->rawQuery = [
             'index' => $indexName,
             'type'  => $indexName,
             'from'  => $pageNumber,
@@ -224,20 +225,19 @@ class ElasticClient implements SearchClientAdaptor, DataWriter, DataSearcher
             ],
         ];
 
-        $facets    = $query['body']['query']['bool']['must'];
+        $facets    = $this->rawQuery['body']['query']['bool']['must'];
         $modifiers = $this->translateFilterModifiers($filters);
 
         if (isset($modifiers['facetFilters'])) {
             $facets = array_merge($facets, $modifiers['facetFilters']);
 
-            $query['body']['query']['bool']['must'] = $facets;
+            $this->rawQuery['body']['query']['bool']['must'] = $facets;
         }
 
         if (isset($modifiers['filters'])) {
-            $query['body']['query']['bool']['filter'] = $modifiers['filters'];
+            $this->rawQuery['body']['query']['bool']['filter'] = $modifiers['filters'];
         }
-
-        $response = $this->callClientMethod('search', [$query]);
+        $response = $this->callClientMethod('search', [$this->rawQuery]);
         $total = (int) $response['hits']['total'];
         $this->response = ['_total' => $total] + $response;
 
@@ -363,5 +363,10 @@ class ElasticClient implements SearchClientAdaptor, DataWriter, DataSearcher
         }
 
         return $modifiedFilter;
+    }
+
+    public function sql()
+    {
+        return $this->rawQuery;
     }
 }
