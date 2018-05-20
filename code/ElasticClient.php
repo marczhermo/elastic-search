@@ -308,15 +308,17 @@ class ElasticClient implements SearchClientAdaptor, DataWriter, DataSearcher
             foreach ($forFacets as $filterArray) {
                 foreach ($filterArray as $key => $value) {
                     if (is_array($value)) {
-                        $phrases = array_map(
-                            function ($item) use ($key) {
-                                return [
-                                    'match_phrase' => [
-                                        $key => ['query' => $item]
-                                        ]
-                                    ];
-                            },
-                            $value
+                        $phrases = array_values(
+                            array_map(
+                                function ($item) use ($key) {
+                                    return [
+                                        'match_phrase' => [
+                                            $key => ['query' => $item]
+                                            ]
+                                        ];
+                                },
+                                $value
+                            )
                         );
 
                         $query['facetFilters'][] = [
